@@ -42,20 +42,60 @@ function runBamazon() {
 };
 
 function showAll() {
-    connection.query("SELECT * FROM products", function (err, res) {
-        var productArray = [];
+    connection.query("SELECT * FROM products", showProducts)
+}
 
-        if (err) throw err;
-        // console.log(res);
-        for (var i = 0; i < res.length; i++) {
-           productArray.push(res[i].product_name + " | Department: " + res[i].department_name + 
-           " | Price: $" + res[i].price + " | Stock: " + res[i].stock); 
+function showProducts(err, res) {
+    var productArray = [];
+
+    if (err) throw err;
+
+    for (var i = 0; i < res.length; i++) {
+        var product = {
+            name: res[i].product_name + " | Department: " + res[i].department_name + 
+            " | Price: $" + res[i].price + " | Stock: " + res[i].stock,
+            value: res[i].id
         };
-        inquirer.prompt({
-            name:"productChoice",
-            type: "list",
-            message: "Select an item you would like to order",
-            choices: productArray
-        })
+        productArray.push(product);
+    };
+
+    productArray.push({
+        name: "Back",
+        value: 0
     })
+
+    inquirer.prompt({
+        name:"productChoice",
+        type: "list",
+        message: "Select an item you would like to order",
+        choices: productArray,
+        pageSize: 15,
+    }).then(function(answer) {
+        var productId = answer.productChoice;
+        if (productId == 0) {
+            runBamazon
+        } else {
+            purchaseItem(productId)
+        }
+            
+    })
+}
+
+function purchaseItem(id) {
+    connection.query("SELECT stock FROM products WHERE ?", 
+    {
+        id: id
+    }, function(err, res) {
+        if (err) throw err;
+        console.log(res)
+    })
+
+    // inquirer.prompt({
+    //     name: "quantity",
+    //     type: input,
+    //     message: "How many would you like to order?",
+    //     validate: function(input){
+    //         if (Number.isInteger(input) && input <= )
+    //     }
+    // })
 }
