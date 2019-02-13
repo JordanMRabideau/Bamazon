@@ -45,16 +45,16 @@ function showAll() {
     connection.query("SELECT * FROM products", showProducts)
 }
 
-function showProducts(err, res) {
+function showProducts(err, table) {
     var productArray = [];
 
     if (err) throw err;
 
-    for (var i = 0; i < res.length; i++) {
+    for (var i = 0; i < table.length; i++) {
         var product = {
-            name: res[i].product_name + " | Department: " + res[i].department_name + 
-            " | Price: $" + res[i].price + " | Stock: " + res[i].stock,
-            value: res[i].id
+            name: table[i].product_name + " | Department: " + table[i].department_name + 
+            " | Price: $" + table[i].price + " | Stock: " + table[i].stock,
+            value: table[i].id
         };
         productArray.push(product);
     };
@@ -85,17 +85,37 @@ function purchaseItem(id) {
     connection.query("SELECT stock FROM products WHERE ?", 
     {
         id: id
-    }, function(err, res) {
-        if (err) throw err;
-        console.log(res)
+    }, function(error, stockNum) {
+        if (error) throw error;
+        inquirer.prompt({
+            name: "amount",
+            type: "input",
+            message: "How many would you like to order?",
+        }).then(function(ans){
+            updateDatabase(ans, stockNum, id)
+        })
     })
+}           
 
-    // inquirer.prompt({
-    //     name: "quantity",
-    //     type: input,
-    //     message: "How many would you like to order?",
-    //     validate: function(input){
-    //         if (Number.isInteger(input) && input <= )
-    //     }
-    // })
+function updateDatabase(ans, stockNum, id) {
+    var quant = parseInt(ans.amount);
+    if (Number.isInteger(quant) && quant <= stockNum[0].stock && quant > 0) {
+        var newStock = stockNum[0].stock - quant;
+        // console.log("Original stock: " + res[0].stock + "\nNew stock: " + newStock);
+        connection.query("UPDATE products SET ? WHERE?",
+        [
+            {
+                stock: newStock
+            },
+            {
+                id: id
+            }
+        ]);
+        console.log("\nThank you for shopping at Bamazon! Your order will arrive within the next 2 to 3 days." + 
+        "\nYou Will now be redirected to the start menu.\n")
+        showAll()
+    } else if (quant == 0) {
+        console.log("Please enter a value greater than 0");
+        purchaseItem(id);
+    }
 }
