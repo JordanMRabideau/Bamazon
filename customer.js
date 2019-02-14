@@ -45,11 +45,10 @@ function showAll() {
     connection.query("SELECT * FROM products", showProducts)
 }
 
+
 function showProducts(err, table) {
     var productArray = [];
-
     if (err) throw err;
-
     for (var i = 0; i < table.length; i++) {
         var product = {
             name: table[i].product_name + " | Department: " + table[i].department_name + 
@@ -73,7 +72,7 @@ function showProducts(err, table) {
     }).then(function(answer) {
         var productId = answer.productChoice;
         if (productId == 0) {
-            runBamazon
+            runBamazon();
         } else {
             purchaseItem(productId)
         }
@@ -82,7 +81,7 @@ function showProducts(err, table) {
 }
 
 function purchaseItem(id) {
-    connection.query("SELECT stock FROM products WHERE ?", 
+    connection.query("SELECT stock, price FROM products WHERE ?", 
     {
         id: id
     }, function(error, stockNum) {
@@ -90,9 +89,13 @@ function purchaseItem(id) {
         inquirer.prompt({
             name: "amount",
             type: "input",
-            message: "How many would you like to order?",
+            message: "Please enter the amount you would like to order, or type 'back' to return to the previous menu",
         }).then(function(ans){
-            updateDatabase(ans, stockNum, id)
+            if (ans.amount == 'back' || ans.amount == 'Back') {
+                showAll();
+            } else{
+                updateDatabase(ans, stockNum, id);
+            }
         })
     })
 }           
@@ -101,6 +104,7 @@ function updateDatabase(ans, stockNum, id) {
     var quant = parseInt(ans.amount);
     if (Number.isInteger(quant) && quant <= stockNum[0].stock && quant > 0) {
         var newStock = stockNum[0].stock - quant;
+        var totalPrice = quant * stockNum[0].price
         // console.log("Original stock: " + res[0].stock + "\nNew stock: " + newStock);
         connection.query("UPDATE products SET ? WHERE?",
         [
@@ -111,11 +115,34 @@ function updateDatabase(ans, stockNum, id) {
                 id: id
             }
         ]);
-        console.log("\nThank you for shopping at Bamazon! Your order will arrive within the next 2 to 3 days." + 
-        "\nYou Will now be redirected to the start menu.\n")
+        console.log("\nYour total is: $" + totalPrice + "\nYour order will arrive within the next 2 to 3 days.\n")
         showAll()
     } else if (quant == 0) {
         console.log("Please enter a value greater than 0");
         purchaseItem(id);
     }
 }
+
+function departmentSearch(){
+    connection.query("SELECT * FROM products", listDepartments); 
+}
+
+function listDepartments(err, res) {
+    var departments = [];
+    if (err) throw err;
+    for (var i in res) {
+        if (!departments.includes(res[i].department_name)) {
+            departments.push(res[i].department_name);
+        };
+    };
+    inquirer.prompt({
+        name: "dept",
+        type: "list",
+        choices: departments,
+        message: "Select a department you'd like to search",
+    }).then(function(ans){
+        connection.query("SELECT * FROM products WHERE ?", {
+            department_name: ans.dept
+        }, showProducts);
+    });
+};
