@@ -19,7 +19,6 @@ connection.connect(function(err){
 
 function runBamazon() {
     currentMenu = "main"
-    console.log(currentMenu)
     inquirer.prompt({
         name: "search",
         type: "list",
@@ -47,13 +46,11 @@ function runBamazon() {
 
 function showAll() {
     currentMenu = "prodList"
-    console.log(currentMenu);
     connection.query("SELECT * FROM products", showProducts)
 }
 
 
 function showProducts(err, table) {
-    console.log(currentMenu);
     var productArray = [];
     if (err) throw err;
     for (var i = 0; i < table.length; i++) {
@@ -100,7 +97,6 @@ function purchaseItem(id) {
             type: "input",
             message: "Please enter the amount you would like to order, or type 'back' to return to the previous menu",
         }).then(function(ans){
-            console.log(currentMenu);
             if ((ans.amount == 'back' || ans.amount == 'Back') && currentMenu == "deptProducts") {
                 departmentSearch();
             } else if ((ans.amount == 'back' || ans.amount == 'Back')) {
