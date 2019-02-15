@@ -9,6 +9,8 @@ var connection = mysql.createConnection({
     database: "bamazon"
 });
 
+var currentMenu = ""
+
 connection.connect(function(err){
     if (err) throw err;
     console.log("Connected to database");
@@ -16,6 +18,7 @@ connection.connect(function(err){
 });
 
 function runBamazon() {
+    currentMenu = "main"
     inquirer.prompt({
         name: "search",
         type: "list",
@@ -42,6 +45,7 @@ function runBamazon() {
 };
 
 function showAll() {
+    currentMenu = "prodList"
     connection.query("SELECT * FROM products", showProducts)
 }
 
@@ -71,8 +75,10 @@ function showProducts(err, table) {
         pageSize: 15,
     }).then(function(answer) {
         var productId = answer.productChoice;
-        if (productId == 0) {
+        if (productId == 0 && (currentMenu == "prodList")) {
             runBamazon();
+        } else if (productId == 0 && (currentMenu == "deptProducts")) {
+            departmentSearch();
         } else {
             purchaseItem(productId)
         }
@@ -91,7 +97,7 @@ function purchaseItem(id) {
             type: "input",
             message: "Please enter the amount you would like to order, or type 'back' to return to the previous menu",
         }).then(function(ans){
-            if (ans.amount == 'back' || ans.amount == 'Back') {
+            if ((ans.amount == 'back' || ans.amount == 'Back') && (currentMenu == "prodlist")) {
                 showAll();
             } else{
                 updateDatabase(ans, stockNum, id);
@@ -124,6 +130,7 @@ function updateDatabase(ans, stockNum, id) {
 }
 
 function departmentSearch(){
+    currentMenu = "depts"
     connection.query("SELECT * FROM products", listDepartments); 
 }
 
@@ -135,14 +142,25 @@ function listDepartments(err, res) {
             departments.push(res[i].department_name);
         };
     };
+
+    departments.push("Back");
+    
     inquirer.prompt({
         name: "dept",
         type: "list",
         choices: departments,
         message: "Select a department you'd like to search",
     }).then(function(ans){
-        connection.query("SELECT * FROM products WHERE ?", {
-            department_name: ans.dept
-        }, showProducts);
+        currentMenu = "deptProducts"
+
+        if (ans.dept == "Back") {
+            runBamazon()
+        } else {
+            connection.query("SELECT * FROM products WHERE ?", {
+                department_name: ans.dept
+            }, showProducts);
+        }
+        
     });
 };
+
