@@ -124,7 +124,11 @@ function updateDatabase(ans, stockNum, id) {
             }
         ]);
         console.log("\nYour total is: $" + totalPrice + "\nYour order will arrive within the next 2 to 3 days.\n")
-        showAll()
+        if (currentMenu == "deptProducts") {
+            departmentSearch()
+        } else {
+            showAll();
+        }
     } else if (quant == 0) {
         console.log("Please enter a value greater than 0");
         purchaseItem(id);
